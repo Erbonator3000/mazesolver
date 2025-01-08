@@ -1,6 +1,5 @@
 ---
 Language: Cpp
-# AccessModifierOffset: 
 AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: None
 AlignConsecutiveAssignments:
@@ -17,155 +16,67 @@ AlignEscapedNewlines: DontAlign
 AlignOperands: DontAlign
 AlignTrailingComments: Never
 AllowAllArgumentsOnNextLine: false
-# AllowAllConstructorInitializersOnNextLine #DEPRECATED
-AllowAllParametersOfDeclarationOnNextLine: true
-# AllowBreakBeforeNoexceptSpecifier
+AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: false
-# AllowShortCompoundRequirementOnASingleLine
 AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
-# AllowShortLambdasOnASingleLine
 AllowShortLoopsOnASingleLine: true
-# AlwaysBreakAfterDefinitionReturnType #DEPRECATED
 AlwaysBreakAfterReturnType: None
-# AlwaysBreakBeforeMultilineStrings
-# AlwaysBreakTemplateDeclarations
-# AttributeMacros
 BinPackArguments: false
 BinPackParameters: false
 BitFieldColonSpacing: After
-# BraceWrapping
 BracedInitializerIndentWidth: 2
-# BreakAdjacentStringLiterals
-# BreakAfterAttributes
-# BreakAfterJavaFieldAnnotations
 BreakArrays: false
 BreakBeforeBinaryOperators: All
 BreakBeforeBraces: Attach
-# BreakBeforeConceptDeclarations
 BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true
-# BreakConstructorInitializers
-# BreakInheritanceList
 BreakStringLiterals: false
 ColumnLimit: 120
-# CommentPragmas
-# CompactNamespaces
-# ConstructorInitializerAllOnOneLineOrOnePerLine #DEPRECATED
-# ConstructorInitializerIndentWidth
 ContinuationIndentWidth: 2
 Cpp11BracedListStyle: true
-# DeriveLineEnding #DEPRECATED
-# DerivePointerAlignment # Defined explicitly
 DisableFormat: false
-# EmptyLineAfterAccessModifier: Never
-# EmptyLineBeforeAccessModifier: Never
-# FixNamespaceComments
-# ForEachMacros
-# IfMacros
-# IncludeBlocks # Not sorted
-# IncludeCategories
-# IncludeIsMainRegex
-# IncludeIsMainSourceRegex
-# IndentAccessModifiers
+ExperimentalAutoDetectBinPacking: false
 IndentCaseBlocks: false
 IndentCaseLabels: true
 IndentExternBlock: NoIndent
 IndentGotoLabels: false
-IndentPPDirectives: None # TODO
-# IndentRequiresClause
+IndentPPDirectives: None
 IndentWidth: 2
-IndentWrappedFunctionNames: true # TODO: Is even allowed?
+IndentWrappedFunctionNames: true
 InsertBraces: true
 InsertNewlineAtEOF: true
-# InsertTrailingCommas: Wrapped
-# IntegerLiteralSeparator
-# JavaImportGroups
-# JavaScriptQuotes
-# JavaScriptWrapImports
-# KeepEmptyLinesAtEOF:  # see MaxEmptyLinesToKeep
+InsertTrailingCommas: Wrapped
 KeepEmptyLinesAtTheStartOfBlocks: false
-# LambdaBodyIndentation
-# LineEnding # TODO: Use default
-# MacroBlockBegin
-# MacroBlockEnd
-# Macros
 MaxEmptyLinesToKeep: 1
-# NamespaceIndentation
-# NamespaceMacros
-# ObjCBinPackProtocolList
-# ObjCBlockIndentWidth
-# ObjCBreakBeforeNestedBlockParam
-# ObjCSpaceAfterProperty
-# ObjCSpaceBeforeProtocolList
 PPIndentWidth: -1 # Uses IndentWidth
-# PackConstructorInitializers
-
-# PenaltyBreakAssignment
-# PenaltyBreakBeforeFirstCallParameter
-# PenaltyBreakComment
-# PenaltyBreakFirstLessLess
-# PenaltyBreakOpenParenthesis
-# PenaltyBreakString
-# PenaltyBreakTemplateDeclaration
-# PenaltyExcessCharacte
-# PenaltyIndentedWhitespace
-# PenaltyReturnTypeOnItsOwnLine
-
+PenaltyBreakAssignment: 1000
+PenaltyReturnTypeOnItsOwnLine: 1000
 PointerAlignment: Right
 QualifierAlignment: Leave
-# QualifierOrder
-# RawStringFormats
 ReferenceAlignment: Right
 ReflowComments: false
 RemoveBracesLLVM: false
-# RemoveParentheses: Leave
 RemoveSemicolon: false
-# RequiresClausePosition
-# RequiresExpressionIndentation
 SeparateDefinitionBlocks: Always
-# ShortNamespaceLines
 SortIncludes: Never
-# SortJavaStaticImport
-# SortUsingDeclarations
 SortUsingDeclarations: true
+SpaceAfterCStyleCast: true
 SpaceAfterLogicalNot: false
-# SpaceAfterTemplateKeyword
 SpaceAroundPointerQualifiers: Default # Uses PointerAlignment
 SpaceBeforeAssignmentOperators: true
-SpaceBeforeCaseColon: false
-# SpaceBeforeCpp11BracedList
-# SpaceBeforeCtorInitializerColon
-# SpaceBeforeInheritanceColon
-# SpaceBeforeJsonColon
 SpaceBeforeParens: ControlStatementsExceptControlMacros
-# SpaceBeforeParensOptions
-# SpaceBeforeRangeBasedForLoopColon
 SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
-# SpaceInEmptyParentheses #DEPRECATED
 SpacesBeforeTrailingComments: 1
-# SpacesInAngles
-# SpacesInCStyleCastParentheses #DEPRECATED
-# SpacesInConditionalStatement #DEPRECATED
 SpacesInContainerLiterals: false
 SpacesInLineCommentPrefix:
   Minimum: 1
   Maximum: 1
 SpacesInParens: Never
-# SpacesInParensOptions
-# SpacesInParentheses #DEPRECATED
 SpacesInSquareBrackets: false
-# Standard
-# StatementAttributeLikeMacros
-# StatementMacros
 TabWidth: 2
-# TypeNames
-# TypenameMacros
-# UseCRLF #DEPRECATED
 UseTab: Never
-# VerilogBreakBetweenInstancePorts
-# WhitespaceSensitiveMacros
 ---

@@ -1,108 +1,261 @@
 /* Copyright 2025 Eero Prittinen */
 
 #include <stdlib.h>
-#include <stdio.h> // TODO: Deelete laterz
-#include <string.h> // TODO: Deelete laterz
+#include <stdbool.h>
+#include <string.h>
+#include <limits.h>
 #include "maze.h"
 
-int getLeft(char* maze, int mazeWidth, int mazeHeight, int self) {
-  // Check for outer wall
-  if (self % mazeWidth == 0) return -1; // Cant go outside of maze
-  else if (maze[self - 1] == '#') return -1; // Cant go to wall
-  else return self - 1;
-}
+// Default characters to parse the maze
+#define MAZE_CHAR_WALL '#'
+#define MAZE_CHAR_PASS ' '
+#define MAZE_CHAR_START '^'
+#define MAZE_CHAR_EXIT 'E'
+#define MAZE_CHAR_PATH '*'
 
-int getRight(char* maze, int mazeWidth, int mazeHeight, int self) {
-  // Check for outer wall
-  if (self % mazeWidth >= (mazeWidth - 1) ) return -1; // Cant go outside of maze
-  else if (maze[self + 1] == '#') return -1; // Cant go to wall
-  else return self + 1;
-}
-
-int getTop(char* maze, int mazeWidth, int mazeHeight, int self) {
-  // Check for outer wall
-  if (self / mazeWidth == 0 ) return -1; // Cant go outside of maze
-  else if (maze[self - mazeWidth] == '#') return -1; // Cant go to wall
-  else return self - mazeWidth;
-}
-
-int getBottom(char* maze, int mazeWidth, int mazeHeight, int self) {
-  // Check for outer wall
-  if (self / mazeWidth >= mazeHeight - 1 ) return -1; // Cant go outside of maze
-  else if (maze[self + mazeWidth] == '#') return -1; // Cant go to wall
-  else return self + mazeWidth;
-}
-
-void rateNeighbours(char* maze, int ** dist, int mazeWidth, int mazeHeight, int self, int parentDist) {
-  if ((*dist)[self] != 0 && (*dist)[self] <= parentDist) return;
-  (*dist)[self] = parentDist;
-  int left = getLeft(maze, mazeWidth, mazeHeight, self);
-  if (left != -1) {
-    rateNeighbours(maze, dist, mazeWidth, mazeHeight, left, parentDist + 1);
+static maze_node_t *getLeft(maze_solver_handle_t *mazeHandle, maze_node_t *self) {
+  long int index = (self - mazeHandle->maze);
+  if (index % mazeHandle->width == 0 || mazeHandle->maze[index - 1].type == WALL) {
+    return NULL;
   }
-  int right = getRight(maze, mazeWidth, mazeHeight, self);
-  if (right != -1) {
-    rateNeighbours(maze, dist, mazeWidth, mazeHeight, right, parentDist + 1);
+  maze_node_t *left = &mazeHandle->maze[index - 1];
+  if (left->type == WALL) {
+    return NULL;
   }
-  int top = getTop(maze, mazeWidth, mazeHeight, self);
-  if (top != -1) {
-    rateNeighbours(maze, dist, mazeWidth, mazeHeight, top, parentDist + 1);
-  }
-  int bottom = getBottom(maze, mazeWidth, mazeHeight, self);
-  if (bottom != -1) {
-    rateNeighbours(maze, dist, mazeWidth, mazeHeight, bottom, parentDist + 1);
-  }
+  return left;
 }
 
-int solve(const struct maze_node *const maze, const int mazeWidth, const int mazeHeight, struct maze_node **route) {
-  // Find start of the maze
-  struct maze_node *nodeListEnd = maze + (mazeWidth * mazeHeight);
-  struct maze_node *start = maze;
-  while (start->type != MAZE_START) {
-    if (start >= nodeListEnd) {
-      return MAZE_ERROR_NO_START;
+static maze_node_t *getRight(maze_solver_handle_t *mazeHandle, maze_node_t *self) {
+  long int index = (self - mazeHandle->maze);
+  if (index % mazeHandle->width >= (mazeHandle->width - 1)) {
+    return NULL;
+  }
+  maze_node_t *right = &mazeHandle->maze[index + 1];
+  if (right->type == WALL) {
+    return NULL;
+  }
+  return right;
+}
+
+static maze_node_t *getTop(maze_solver_handle_t *mazeHandle, maze_node_t *self) {
+  long int index = (self - mazeHandle->maze);
+  if (index / mazeHandle->width == 0) {
+    return NULL;
+  }
+  maze_node_t *top = &mazeHandle->maze[index - mazeHandle->width];
+  if (top->type == WALL) {
+    return NULL;
+  }
+  return top;
+}
+
+static maze_node_t *getBottom(maze_solver_handle_t *mazeHandle, maze_node_t *self) {
+  long int index = (self - mazeHandle->maze);
+  if (index / mazeHandle->width >= mazeHandle->height - 1) {
+    return NULL;
+  }
+  maze_node_t *bottom = &mazeHandle->maze[index + mazeHandle->width];
+  if (bottom->type == WALL) {
+    return NULL;
+  }
+  return bottom;
+}
+
+int mazeSolver_solve(maze_solver_handle_t *mazeHandle, int searchLimit) {
+  maze_node_t *start = NULL;
+
+  // Find the start of the maze
+  for (int i = 0; i < mazeHandle->width * mazeHandle->height; i++) {
+    if (mazeHandle->maze[i].type == START) {
+      if (start != NULL) {
+        return MAZE_ERROR_MULTIPLE_START;
+      }
+      start = &mazeHandle->maze[i];
     }
   }
-  // TODO: SOLVE
-  return 1; // TODO
+  if (start == NULL) {
+    return MAZE_ERROR_NO_START;
+  }
+
+  start->dist = 0;
+
+  maze_node_t *current = start;
+  maze_node_t *listTail = start;
+
+  // Loop trough the list, adding to the end the next nodes to search
+  // This allows for breadth-first search trough the graph
+  while (current != NULL) {
+    if (current->dist > searchLimit) {
+      return MAZE_ERROR_MAX_STEPS_REACHED;
+    }
+
+    if (current->type == EXIT) {
+      // Exit node found, search no further
+      break;
+    }
+
+    maze_node_t *left = getLeft(mazeHandle, current);
+    if (left != NULL && left->parent == NULL) {
+      left->parent = current;
+      left->dist = current->dist + 1;
+
+      listTail->processNext = left;
+      listTail = left;
+    }
+    maze_node_t *right = getRight(mazeHandle, current);
+    if (right != NULL && right->parent == NULL) {
+      right->parent = current;
+      right->dist = current->dist + 1;
+      listTail->processNext = right;
+      listTail = right;
+    }
+    maze_node_t *top = getTop(mazeHandle, current);
+    if (top != NULL && top->parent == NULL) {
+      top->parent = current;
+      top->dist = current->dist + 1;
+      listTail->processNext = top;
+      listTail = top;
+    }
+    maze_node_t *bottom = getBottom(mazeHandle, current);
+    if (bottom != NULL && bottom->parent == NULL) {
+      bottom->parent = current;
+      bottom->dist = current->dist + 1;
+      listTail->processNext = bottom;
+      listTail = bottom;
+    }
+    current = current->processNext;
+  }
+
+  // Breaking out of the loop means that exit found or all paths from start exhausted
+  if (current == NULL || current->type != EXIT) {
+    return MAZE_ERROR_NO_ROUTE;
+  }
+
+  mazeHandle->exitPathLength = current->dist;
+  mazeHandle->exitPath = malloc(current->dist * sizeof(*(mazeHandle->exitPath)));
+  if (mazeHandle->exitPath == NULL) {
+    return MAZE_ERROR_FAILED_MEMORY_ALLOCATION;
+  }
+
+  // Walk back from the exit and record the used path
+  while (current != start) {
+    mazeHandle->exitPath[current->dist - 1] = current - mazeHandle->maze;
+    current = current->parent;
+  }
+
+  return mazeHandle->exitPathLength;
 }
 
+int mazeSolver_loadMazeFromFile(maze_solver_handle_t *mazeHandle, FILE *mazeFile) {
+  // Count the maze size
+  mazeHandle->width = 0;
+  char c = (char) fgetc(mazeFile);
+  while (c != '\n' && c != EOF) {
+    mazeHandle->width++;
+    c = (char) fgetc(mazeFile);
+  }
 
-
-
-
-
-int solveSimple(char *maze, int mazeWidth, int mazeHeight, int **mazeRoute) {
-  // Find start of the maze
-  int mazeStart;
-  for (mazeStart = 0; maze[mazeStart] != CHAR_START; mazeStart++) {
-    if (mazeStart >= mazeWidth * mazeHeight) {
-      return MAZE_ERROR_NO_START;
+  mazeHandle->height = 1; // Got one row already
+  while ((c = (char) fgetc(mazeFile)) != EOF) {
+    if (c == '\n') {
+      mazeHandle->height++;
     }
   }
 
-  int *dist = malloc(mazeWidth * mazeHeight * sizeof(int));
-  memset(dist, 0, mazeWidth * mazeHeight * sizeof(int));
-  rateNeighbours(maze, &dist, mazeWidth, mazeHeight, mazeStart, 1);
+  // Make sure we can process the maze
+  if (mazeHandle->width > INT_MAX || mazeHandle->height > INT_MAX || mazeHandle->width * mazeHandle->height > INT_MAX) {
+    fclose(mazeFile);
+    return MAZE_ERROR_MAZE_TOO_LARGE;
+  }
 
+  rewind(mazeFile);
 
-  // Todo: Walk back from ends
+  mazeHandle->maze = malloc(mazeHandle->width * mazeHandle->height * sizeof(*mazeHandle->maze));
+  if (mazeHandle->maze == NULL) {
+    fclose(mazeFile);
+    return MAZE_ERROR_FAILED_MEMORY_ALLOCATION;
+  }
 
-
-  // TODO: Remove when tests come
-  // Check caölculated read correctly
-  for (int i = 0; i < mazeHeight * mazeWidth; i++) {
-    if (maze[i] == ' ') {
-      printf("%0.3d ", dist[i]);
-    } else {
-       printf("%c", maze[i]);
-       printf("%c", maze[i]);
-       printf("%c ", maze[i]);
+  int i = 0;
+  while ((c = (char) fgetc(mazeFile)) != EOF) {
+    switch (c) {
+      case MAZE_CHAR_PASS:
+        mazeHandle->maze[i].type = PASS;
+        i++;
+        break;
+      case MAZE_CHAR_WALL:
+        mazeHandle->maze[i].type = WALL;
+        i++;
+        break;
+      case MAZE_CHAR_EXIT:
+        mazeHandle->maze[i].type = EXIT;
+        i++;
+        break;
+      case MAZE_CHAR_START:
+        mazeHandle->maze[i].type = START;
+        i++;
+        break;
+      case '\n':
+        // Do nothing
+        break;
+      default:
+        fclose(mazeFile);
+        return MAZE_ERROR_INCORRECT_FORMAT;
+        break;
     }
-    if ((i + 1) % mazeWidth == 0) {
-      printf("\n");
+  }
+  fclose(mazeFile);
+  return MAZE_OK;
+}
+
+void mazeSolver_init(maze_solver_handle_t *mazeHandle) {
+  // Set all pointers to NULL
+  memset(mazeHandle, 0, sizeof(maze_solver_handle_t));
+}
+
+void mazeSolver_deinit(maze_solver_handle_t *mazeHandle) {
+  // Free all used dynamic memory
+  if (mazeHandle->exitPath != NULL) {
+    free(mazeHandle->exitPath);
+  }
+  if (mazeHandle->maze != NULL) {
+    free(mazeHandle->maze);
+  }
+}
+
+int mazeSolver_print(maze_solver_handle_t *mazeHandle, FILE *stream) {
+  char *printableMaze = malloc(mazeHandle->width * mazeHandle->height * sizeof(char));
+  if (printableMaze == NULL) {
+    return MAZE_ERROR_FAILED_MEMORY_ALLOCATION;
+  }
+  for (int i = 0; i < mazeHandle->height * mazeHandle->width; i++) {
+    switch (mazeHandle->maze[i].type) {
+      case PASS:
+        printableMaze[i] = MAZE_CHAR_PASS;
+        break;
+      case WALL:
+        printableMaze[i] = MAZE_CHAR_WALL;
+        break;
+      case EXIT:
+        printableMaze[i] = MAZE_CHAR_EXIT;
+        break;
+      case START:
+        printableMaze[i] = MAZE_CHAR_START;
+        break;
     }
   }
 
-  return 1;
+  for (int i = 0; i < mazeHandle->exitPathLength; i++) {
+    printableMaze[mazeHandle->exitPath[i]] = MAZE_CHAR_PATH; // Mark the path
+  }
+
+  // Nicer print with unicode
+  for (int i = 0; i < mazeHandle->height * mazeHandle->width; i++) {
+    fprintf(stream, "%c", printableMaze[i]);
+    if ((i + 1) % mazeHandle->width == 0) {
+      fprintf(stream, "\n");
+    }
+  }
+  free(printableMaze);
+  return MAZE_OK;
 }

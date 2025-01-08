@@ -2,127 +2,94 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <getopt.h>
+#include <errno.h>
 #include "maze.h"
 
-#define DIST_WALL 0xffffffff
+static struct option long_options[] = {
+  {"help", no_argument, 0, 'h'},
+  {"limit", required_argument, 0, 'l'},
+  {0, 0, 0, 0} // Sentinel to mark the end of the array
+};
+
+static long int searchLimit = INT_MAX;
+
+__attribute__((noreturn)) static void usage(int status) {
+  if (status != EXIT_SUCCESS) {
+    fprintf(stderr, "Usage: %s [OPTION]... [FILE]\n", getprogname());
+    fprintf(stderr, "Try '%s --help' for more information.\n", getprogname());
+  } else {
+    printf("Usage: %s [OPTION]... [FILE]\n", getprogname());
+    printf("Try '%s --help' for more information.\n", getprogname());
+    printf("\
+  -h, --help      Print this help text\n\
+  -l --limit      Set the limit how many steps to seach\n");
+  }
+  fprintf(stderr, "\n");
+  exit(status);
+}
 
 int main(int argc, char **argv) {
-  // TODO: Check for parameters and evaluate
-  if (argc < 2) {
-    printf("Provide a maze filename\n"); // TODO: Better error message
-    return 1;
+  int opt;
+  int option_index = 0;
+  while ((opt = getopt_long(argc, argv, "hl:", long_options, &option_index)) != -1) {
+    switch (opt) {
+      case 'h':
+        usage(EXIT_SUCCESS);
+        return EXIT_SUCCESS;
+      case 'l': {
+        char *endptr;
+        errno = 0;
+        searchLimit = strtol(optarg, &endptr, 10);
+        if (errno != 0 || endptr == optarg || *endptr != '\0') {
+          usage(EXIT_FAILURE);
+        }
+        break;
+      }
+      default:
+        usage(EXIT_FAILURE);
+        return EXIT_FAILURE;
+    }
   }
 
+  if (argc - optind != 1) {
+    usage(EXIT_FAILURE);
+  }
   char *mazeFileName = argv[argc - 1];
   FILE *mazeFile = fopen(mazeFileName, "r");
-  if (mazeFile == NULL) { // TODO: Should use ferror()?
-    printf("Could not open maze %s\n", mazeFileName);
-    return 1;
+  if (mazeFile == NULL) {
+    fprintf(stderr, "Could not open maze %s\n", mazeFileName);
+    return EXIT_FAILURE;
   }
 
-  // TODO: Is there a newline in the end??
-  // First count the maze size
-  int mazeWidth = 0;
-  char c = fgetc(mazeFile);
-  while (c != '\n' && c != EOF) {
-    mazeWidth++;
-    c = fgetc(mazeFile);
+  maze_solver_handle_t mazeHandle;
+  mazeSolver_init(&mazeHandle);
+
+  int ret = mazeSolver_loadMazeFromFile(&mazeHandle, mazeFile);
+  if (ret < 0) {
+    fprintf(stderr, MAZE_ERROR(ret));
+    mazeSolver_deinit(&mazeHandle);
+    fclose(mazeFile);
+    return EXIT_FAILURE;
   }
 
-  int mazeHeight = 1; // Got one row already
-  while ((c = fgetc(mazeFile)) != EOF) {
-    if (c == '\n') {
-      mazeHeight++;
-    }
+  ret = mazeSolver_solve(&mazeHandle, (int) searchLimit);
+
+  if (ret < 0) {
+    printf(MAZE_ERROR(ret));
+    mazeSolver_deinit(&mazeHandle);
+    fclose(mazeFile);
+    return EXIT_FAILURE;
   }
 
-  printf("Maze width: %d, height: %d\n", mazeWidth, mazeHeight);
-  rewind(mazeFile);
-  char *mazeNodes = malloc(mazeWidth * mazeHeight * sizeof(char)); // TODO: Check for malloc success
-  // TODO: Make prettier
-  int i = 0;
-  while ((c = fgetc(mazeFile)) != EOF) {
-    if (c != '\n') {
-      mazeNodes[i] = c;
-      i++;
-    }
-  }
-  
-  // TODO: Remove when tests come
-  // Check read correctly
-  for (int i = 0; i < mazeHeight * mazeWidth; i++) {
-    printf("%c", mazeNodes[i]);
-    if ((i + 1) % mazeWidth == 0) {
-      printf("\n");
-    }
-  }
-  
-  int *mazeRoute;
-  int routeLength = solveSimple(mazeNodes, mazeWidth, mazeHeight, &mazeRoute);
-  if (routeLength == MAZE_ERROR_NO_START) {
-    printf("No route start found on maze\n");
-    return 1;
-  } else if (routeLength == MAZE_ERROR_NO_END) {
-    printf("No route end(s) found on maze\n");
-    return 1;
-  } else if (routeLength == MAZE_ERROR_NO_ROUTE) {
-    printf("No route found on maze\n");
-    return 1;
-  }
-
-
-  // struct maze_node *mazeNodes = malloc(mazeWidth * mazeHeight * sizeof(struct maze_node));
-  // struct maze_node *mazeStart = NULL;
-
-  // int i = 0;
-  // while ((c = fgetc(mazeFile)) != EOF) {
-  //   if (c == CHAR_WALL) {
-  //     mazeNodes[i].type = MAZE_WALL;
-  //   } else if (c == CHAR_PASS) {
-  //     mazeNodes[i].type = MAZE_PASS;
-  //   } else if (c == CHAR_START) {
-  //     mazeNodes[i].type = MAZE_START;
-  //     mazeStart = &mazeNodes[i];
-  //   } else if (c == CHAR_END) {
-  //     mazeNodes[i].type = MAZE_END;
-  //   }
-  //   if (c != '\n') {
-  //     i++;
-  //   }
-  // }
-
-  // TODO: Remove when tests come
-  // Check read correctly
-  // for (int i = 0; i < mazeHeight * mazeWidth; i++) {
-  //   printf(
-  //     "%c",
-  //     mazeNodes[i].type == MAZE_WALL      ? '#'
-  //       : mazeNodes[i].type == MAZE_START ? '^'
-  //       : mazeNodes[i].type == MAZE_END   ? 'E'
-  //                                         : ' '
-  //   );
-  //   if ((i + 1) % mazeWidth == 0) {
-  //     printf("\n");
-  //   }
-  // }
-
-
-  // Process the maze to more usable format
-  // struct maze_node *route;
-  // int routeLength = solve(mazeNodes, mazeWidth, mazeHeight, &route);
-  // if (routeLength == MAZE_ERROR_NO_START) {
-  //   printf("No route start found on maze\n");
-  //   return 1;
-  // } else if (routeLength == MAZE_ERROR_NO_END) {
-  //   printf("No route end(s) found on maze\n");
-  //   return 1;
-  // } else if (routeLength == MAZE_ERROR_NO_ROUTE) {
-  //   printf("No route found on maze\n");
-  //   return 1;
-  // }
-
-  // TODO: Display route
-
+  ret = mazeSolver_print(&mazeHandle, stdout);
+  mazeSolver_deinit(&mazeHandle);
   fclose(mazeFile);
-  return 0;
+
+  if (ret < 0) {
+    printf(MAZE_ERROR(ret));
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
 }
