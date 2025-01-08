@@ -7,6 +7,11 @@ Basic maze solving program using Dijkstra's algorithm.
 cmake -S . -B build && cmake --build build
 ```
 
+## Installing
+```(bash)
+cmake -S . -B build && cmake --build build && cmake --install
+```
+
 ## Usage
 ```(bash)
 solver [OPTION]... [FILE]
