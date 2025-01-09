@@ -156,9 +156,16 @@ int mazeSolver_loadMazeFromFile(maze_solver_handle_t *mazeHandle, FILE *mazeFile
   }
 
   mazeHandle->height = 1; // Got one row already
+  int widthCheck = 0;
   while ((c = (char) fgetc(mazeFile)) != EOF) {
     if (c == '\n') {
+      if (widthCheck != mazeHandle->width) {
+        return MAZE_ERROR_INCORRECT_FORMAT;
+      }
+      widthCheck = 0;
       mazeHandle->height++;
+    } else {
+      widthCheck++;
     }
   }
 
